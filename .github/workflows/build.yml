@@ -14,13 +14,28 @@ on:
       - ".github/**"
       - "!.github/workflows/build.yml"
 
+      
 jobs:
   build:
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          # M1/ARM64 构建
+          - os: macos-13
+            arch: arm64
+            target: mac-arm64
+
+          # Intel/x64 构建
+          - os: macos-12
+            arch: x64
+            target: mac-x64
+
+          # Windows 构建
+          - os: windows-2022
+            arch: x64
+            target: win-x64
 
     steps:
       - name: Checkout Code
@@ -35,13 +50,15 @@ jobs:
         run: npm install
 
       - name: Build Release Files
+        timeout-minutes: 30
         run: npm run build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILD_ARCH: ${{ matrix.arch }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: release_on_${{ matrix. os }}
+          name: release_on_${{ matrix.target }}
           path: release/
           retention-days: 5
